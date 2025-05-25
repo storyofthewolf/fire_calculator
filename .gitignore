@@ -1,0 +1,25 @@
+*~
+
+# VS Code specific files
+.vscode/
+
+# Dependencies for testing
+pkg/
+
+# Go module cache
+# Local vendored dependencies (if you use `go mod vendor`)
+vendor/
+go.sum
+
+# Operating System generated files
+.DS_Store 
+Thumbs.db 
+
+# Compiled binaries and executables
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.a
+*.bin
