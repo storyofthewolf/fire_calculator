@@ -18,15 +18,13 @@ import (
 // number of years contributing to retiremett accouns
 // current age
 
-// define local constants
-const expectedDeathAge int = 81 // expected age of death
-
 func SimpleGrowth(
 	initialCapital float64, // intial amount of money
 	monthlyContribution float64, // fixed monthly contribution to retirement/investment accounts
 	annualGrowthRate float64, // fixed annual growth rate assumption
 	contributionYears int, // number of years expected to contribute to accounts (before retirement)
 	currentAge int, // your current ages
+	expectedDeathAge int, // when you expect to die
 ) (
 	totalPrincipal []float64,
 	totalContributions []float64,

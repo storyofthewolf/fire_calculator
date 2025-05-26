@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"log"
-	"net/http" // Import the net/http package for web server
-	"os"       // For checking current working directory if needed
+	//	"net/http" // Import the net/http package for web server
+	"os" // For checking current working directory if needed
 
 	"fire_calculator/dataviz"
 )
@@ -21,14 +21,16 @@ func main() {
 		fmt.Printf("Current working directory: %s\n", dir)
 	}
 
-	// Register the handler for the "/plot" URL path
-	http.HandleFunc("/plot", dataviz.PlotHandler)
+	//	// Register the handler for the "/plot" URL path
+	//	http.HandleFunc("/plot", dataviz.PlotHandler)
 
 	port := ":8080"
 	fmt.Printf("Server starting on http://localhost%s/plot\n", port)
 	fmt.Println("Open your browser to this URL and refresh after code changes.")
+	log.Println("Starting Fire Calculator web server...")
+	dataviz.StartPlottingServer(port)
 
 	// Start the HTTP server
 	// log.Fatal will print the error and exit if ListenAndServe fails
-	log.Fatal(http.ListenAndServe(port, nil))
+	//	log.Fatal(http.ListenAndServe(port, nil))
 }

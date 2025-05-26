@@ -6,6 +6,7 @@ package dataviz
 
 import (
 	"fmt"
+	"html/template"
 	"image/color"
 	"image/png"
 
@@ -19,8 +20,36 @@ import (
 	"gonum.org/v1/plot/vg/draw"
 	"gonum.org/v1/plot/vg/vgimg"
 
+	"strconv"
+
 	"fire_calculator/compute"
 )
+
+// Define the path to your HTML template
+const htmlTemplatePath = "templates/index.html" // Relative to your project root
+
+// RootHandler serves the HTML form.
+func RootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Parse the HTML template
+	tmpl, err := template.ParseFiles(htmlTemplatePath)
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Internal Server Error: Could not load form", http.StatusInternalServerError)
+		return
+	}
+
+	// Execute the template, sending it to the client
+	err = tmpl.Execute(w, nil) // nil because we're not passing any dynamic data to the form yet
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Internal Server Error: Could not render form", http.StatusInternalServerError)
+	}
+}
 
 // generatePlotData is a helper function to create the plotter.XYs from your slices
 // assumes the x axis array is an int, y axis array is a float
@@ -42,21 +71,90 @@ func generatePlotData(xData []int, yData []float64, currentAge int) (plotter.XYs
 }
 
 // plotHandler generates the plot and serves it as a PNG image via HTTP
-func PlotHandler(w http.ResponseWriter, r *http.Request) {
+func PlotHandler(w http.ResponseWriter,
+	r *http.Request) {
 
-	initialInv := 360000.0
-	monthlyCont := 3000.0
-	annualRate := 0.05
-	savingYears := 30
-	currentAge := 41
+	// Check if the request method is POST
+	if r.Method != http.MethodPost && r.Method != http.MethodGet { // Allow GET for initial image load or direct URL
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-	principal, contributions, months, err := compute.SimpleGrowth(initialInv, monthlyCont, annualRate, savingYears, currentAge)
+	// Parse the form data (for POST requests) or query parameters (for GET requests)
+	// r.ParseForm() must be called before accessing r.Form, r.PostForm, or r.FormValue
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form data: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Helper function to get a float64 parameter from form/query, with error handling
+	getFloatParam := func(paramName string) (float64, error) {
+		s := r.FormValue(paramName) // r.FormValue works for both GET query and POST form data
+		if s == "" {
+			return 0, fmt.Errorf("missing parameter: %s", paramName)
+		}
+		val, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid value for %s: %w", paramName, err)
+		}
+		return val, nil
+	}
+
+	// Helper function to get an int parameter from form/query, with error handling
+	getIntParam := func(paramName string) (int, error) {
+		s := r.FormValue(paramName)
+		if s == "" {
+			return 0, fmt.Errorf("missing parameter: %s", paramName)
+		}
+		val, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, fmt.Errorf("invalid value for %s: %w", paramName, err)
+		}
+		return val, nil
+	}
+
+	// Get parameters
+	initialCapital, err := getFloatParam("initialCapital")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	monthlyContribution, err := getFloatParam("monthlyContribution")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	annualGrowthRate, err := getFloatParam("annualGrowthRate")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	annualGrowthRate = annualGrowthRate / 100. // convert from percent to fraction
+
+	contributionYears, err := getIntParam("contributionYears")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	currentAge, err := getIntParam("currentAge")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	expectedDeathAge, err := getIntParam("expectedDeathAge")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, expectedDeathAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
 		log.Printf("Error calculating growth: %v", err)
 		return
 	}
 
+	// compute chants to principal and interesr
 	principalPoints, err := generatePlotData(months, principal, currentAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error preparing cumulative data: %v", err), http.StatusInternalServerError)
@@ -73,7 +171,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := plot.New()
 
-	p.Title.Text = fmt.Sprintf("Investment Growth Over %d Years (%.2f%% Annual Rate)", savingYears, annualRate*100)
+	p.Title.Text = fmt.Sprintf("Investment Growth Over %d Years (%.2f%% Annual Rate)", contributionYears, annualGrowthRate*100)
 	p.X.Label.Text = "Age (years)"
 	p.Y.Label.Text = "Amount ($)"
 
@@ -121,4 +219,16 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode plot to PNG", http.StatusInternalServerError)
 		log.Printf("Failed to encode plot to PNG: %v", err)
 	}
+}
+
+// StartPlottingServer now registers two handlers: one for the form, one for the plot.
+func StartPlottingServer(port string) {
+	// Serve the HTML form at the root URL
+	http.HandleFunc("/", RootHandler)
+
+	// Handle form submissions and plot generation at the /plot URL
+	http.HandleFunc("/plot", PlotHandler)
+
+	log.Printf("Dataviz: Serving Fire Calculator at http://localhost%s/", port)
+	log.Fatal(http.ListenAndServe(port, nil))
 }
