@@ -24,6 +24,8 @@ func SimpleGrowth(
 	annualGrowthRate float64, // fixed annual growth rate assumption
 	contributionYears int, // number of years expected to contribute to accounts (before retirement)
 	currentAge int, // your current ages
+	drawDownAge int,
+	monthlyDrawAmount float64,
 	expectedDeathAge int, // when you expect to die
 ) (
 	totalPrincipal []float64,
@@ -41,6 +43,7 @@ func SimpleGrowth(
 	monthlyGrowthRate := annualGrowthRate / 12.0
 	totalMonths := (expectedDeathAge - currentAge) * 12
 	contributionMonths := contributionYears * 12
+	drawDownStart := (drawDownAge - currentAge) * 12
 
 	// slices for running counts of principal accumulation and contributions
 	totalPrincipal = make([]float64, 0, totalMonths)
@@ -57,6 +60,9 @@ func SimpleGrowth(
 		if month <= contributionMonths {
 			currentPrincipal += monthlyContribution
 			currentContributions += monthlyContribution
+		}
+		if month >= drawDownStart {
+			currentPrincipal -= monthlyDrawAmount
 		}
 		// accrue 1 month of interest
 		currentPrincipal *= (1 + monthlyGrowthRate)

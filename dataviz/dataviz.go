@@ -49,6 +49,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Internal Server Error: Could not render form", http.StatusInternalServerError)
 	}
+	log.Println("RootHandler: Served index.html successfully.") // DEBUG
 }
 
 // generatePlotData is a helper function to create the plotter.XYs from your slices
@@ -71,14 +72,21 @@ func generatePlotData(xData []int, yData []float64, currentAge int) (plotter.XYs
 }
 
 // plotHandler generates the plot and serves it as a PNG image via HTTP
-func PlotHandler(w http.ResponseWriter,
-	r *http.Request) {
+func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Check if the request method is POST
-	if r.Method != http.MethodPost && r.Method != http.MethodGet { // Allow GET for initial image load or direct URL
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	log.Printf("PlotHandler: Received request for path: %s, method: %s", r.URL.Path, r.Method) // DEBUG
+
+	// We expect GET requests from the JavaScript fetch API
+	if r.Method != http.MethodGet {
+		log.Printf("PlotHandler: Method mismatch. Expected GET, got %s", r.Method) // DEBUG
+		http.Error(w, "Method not allowed. Use GET for plot generation.", http.StatusMethodNotAllowed)
 		return
 	}
+	// Check if the request method is POST
+	//if r.Method != http.MethodPost && r.Method != http.MethodGet { // Allow GET for initial image load or direct URL
+	//		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	//	return
+	//}
 
 	// Parse the form data (for POST requests) or query parameters (for GET requests)
 	// r.ParseForm() must be called before accessing r.Form, r.PostForm, or r.FormValue
@@ -86,10 +94,12 @@ func PlotHandler(w http.ResponseWriter,
 		http.Error(w, "Error parsing form data: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Println("PlotHandler: Method is GET, proceeding to parse parameters.") // DEBUG
 
 	// Helper function to get a float64 parameter from form/query, with error handling
 	getFloatParam := func(paramName string) (float64, error) {
-		s := r.FormValue(paramName) // r.FormValue works for both GET query and POST form data
+		//	s := r.FormValue(paramName) // r.FormValue works for both GET query and POST form data
+		s := r.URL.Query().Get(paramName) // r.FormValue works for both GET query and POST form data
 		if s == "" {
 			return 0, fmt.Errorf("missing parameter: %s", paramName)
 		}
@@ -97,12 +107,14 @@ func PlotHandler(w http.ResponseWriter,
 		if err != nil {
 			return 0, fmt.Errorf("invalid value for %s: %w", paramName, err)
 		}
+		log.Printf("PlotHandler: Parsed %s: %f", paramName, val) // DEBUG
 		return val, nil
 	}
 
 	// Helper function to get an int parameter from form/query, with error handling
 	getIntParam := func(paramName string) (int, error) {
-		s := r.FormValue(paramName)
+		//		s := r.FormValue(paramName)
+		s := r.URL.Query().Get(paramName) // r.FormValue works for both GET query and POST form dataa
 		if s == "" {
 			return 0, fmt.Errorf("missing parameter: %s", paramName)
 		}
@@ -110,22 +122,26 @@ func PlotHandler(w http.ResponseWriter,
 		if err != nil {
 			return 0, fmt.Errorf("invalid value for %s: %w", paramName, err)
 		}
+		log.Printf("PlotHandler: Parsed %s: %d", paramName, val) // DEBUG
 		return val, nil
 	}
 
 	// Get parameters
 	initialCapital, err := getFloatParam("initialCapital")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	monthlyContribution, err := getFloatParam("monthlyContribution")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	annualGrowthRate, err := getFloatParam("annualGrowthRate")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -133,28 +149,46 @@ func PlotHandler(w http.ResponseWriter,
 
 	contributionYears, err := getIntParam("contributionYears")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	currentAge, err := getIntParam("currentAge")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	drawDownAge, err := getIntParam("drawDownAge")
+	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	monthlyDrawAmount, err := getFloatParam("monthlyDrawAmount")
+	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	expectedDeathAge, err := getIntParam("expectedDeathAge")
 	if err != nil {
+		log.Printf("PlotHandler Error: %v", err) // DEBUG
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, expectedDeathAge)
+	log.Println("PlotHandler: All parameters parsed successfully. Generating plot.") // DEBUG
+
+	// Computational logic
+	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
 		log.Printf("Error calculating growth: %v", err)
 		return
 	}
 
-	// compute chants to principal and interesr
+	// generate plot data
 	principalPoints, err := generatePlotData(months, principal, currentAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error preparing cumulative data: %v", err), http.StatusInternalServerError)
@@ -169,6 +203,7 @@ func PlotHandler(w http.ResponseWriter,
 		return
 	}
 
+	//plot
 	p := plot.New()
 
 	p.Title.Text = fmt.Sprintf("Investment Growth Over %d Years (%.2f%% Annual Rate)", contributionYears, annualGrowthRate*100)
@@ -219,6 +254,7 @@ func PlotHandler(w http.ResponseWriter,
 		http.Error(w, "Failed to encode plot to PNG", http.StatusInternalServerError)
 		log.Printf("Failed to encode plot to PNG: %v", err)
 	}
+	log.Println("Plot generated and served via AJAX.")
 }
 
 // StartPlottingServer now registers two handlers: one for the form, one for the plot.
