@@ -4,52 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fire Calculator</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); max-width: 600px; margin: 20px auto; display: flex; flex-direction: column; }
-        .form-section { flex: 1; padding-right: 20px; }
-        .plot-section { flex: 1; padding-left: 20px; border-left: 1px solid #eee; margin-left: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="number"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; }
-        button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background-color: #0056b3; }
-        .plot-container { margin-top: 30px; text-align: center; }
-        img { max-width: 100%; height: auto; border: 1px solid #ddd; }
-        .error-message { color: red; margin-top: 10px; }
-        @media (min-width: 768px) {
-            .container { flex-direction: row; }
-            .form-section { padding-right: 20px; }
-            .plot-section { padding-left: 20px; }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <div class="form-section">
             <h1>Financial Independence Calculator</h1>
             <form id="calculatorForm"> <label for="initialCapital">Initial Capital ($):</label>
-                <input type="number" id="initialCapital" name="initialCapital" value="100000" step="0.01" required>
+                <input type="number" id="initialCapital" name="initialCapital" value="100000" step="10000" required>
 
                 <label for="monthlyContribution">Monthly Contribution ($):</label>
-                <input type="number" id="monthlyContribution" name="monthlyContribution" value="500" step="0.01" required>
+                <input type="number" id="monthlyContribution" name="monthlyContribution" value="500" step="100" required>
 
                 <label for="annualGrowthRate">Annual Growth Rate (%):</label>
-                <input type="number" id="annualGrowthRate" name="annualGrowthRate" value="7" step="0.01" required>
+                <input type="number" id="annualGrowthRate" name="annualGrowthRate" value="7" step="0.1" required>
 
                 <label for="contributionYears">Contribution Years:</label>
-                <input type="number" id="contributionYears" name="contributionYears" value="15" required>
+                <input type="number" id="contributionYears" name="contributionYears" value="15" step="1" required>
 
                 <label for="currentAge">Current Age:</label>
-                <input type="number" id="currentAge" name="currentAge" value="30" required>
+                <input type="number" id="currentAge" name="currentAge" value="30" step="1" required>
 
                 <label for="drawDownAge">Age to Begin Draw Down:</label>
-                <input type="number" id="drawDownAge" name="drawDownAge" value="30" required>
+                <input type="number" id="drawDownAge" name="drawDownAge" value="60" step="1" required>
 
                 <label for="monthlyDrawAmount">Monthly Draw Down Ammount ($):</label>
-                <input type="number" id="monthlyDrawAmount" name="monthlyDrawAmount" value="3000" required>
+                <input type="number" id="monthlyDrawAmount" name="monthlyDrawAmount" value="8000" step="100" required>
 
                 <label for="expectedDeathAge">Expected Death Age:</label>
-                <input type="number" id="expectedDeathAge" name="expectedDeathAge" value="90" required>
+                <input type="number" id="expectedDeathAge" name="expectedDeathAge" value="85" step="1" required>
 
                 <button type="submit">Generate Plot</button>
             </form>
@@ -98,10 +81,10 @@
                 plotImage.src = imageUrl;
 
                 // Clean up the old object URL if needed (optional, for memory management)
-                // if (plotImage.dataset.oldUrl) {
-                //     URL.revokeObjectURL(plotImage.dataset.oldUrl);
-                // }
-                // plotImage.dataset.oldUrl = imageUrl;
+                if (plotImage.dataset.oldUrl) {
+                     URL.revokeObjectURL(plotImage.dataset.oldUrl);
+                 }
+                plotImage.dataset.oldUrl = imageUrl;
 
             } catch (error) {
                 console.error("Error generating plot:", error);

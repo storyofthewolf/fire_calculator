@@ -27,6 +27,7 @@ import (
 
 // Define the path to your HTML template
 const htmlTemplatePath = "templates/index.html" // Relative to your project root
+const staticFilesDir = "static"                 // Define the directory where your static files are
 
 // RootHandler serves the HTML form.
 func RootHandler(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +181,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("PlotHandler: All parameters parsed successfully. Generating plot.") // DEBUG
 
-	// Computational logic
+	// cmputational logic
 	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
@@ -206,9 +207,9 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 	//plot
 	p := plot.New()
 
-	p.Title.Text = fmt.Sprintf("Investment Growth Over %d Years (%.2f%% Annual Rate)", contributionYears, annualGrowthRate*100)
+	p.Title.Text = fmt.Sprintf("Investment Growth Over %d Years (%.2f%% Annual Rate)", totalYears, annualGrowthRate*100)
 	p.X.Label.Text = "Age (years)"
-	p.Y.Label.Text = "Amount ($)"
+	p.Y.Label.Text = "Captial Amount ($)"
 
 	linePrincipal, err := plotter.NewLine(principalPoints)
 	if err != nil {
@@ -239,7 +240,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a PNG drawing canvas that writes directly to the ResponseWriter
 	// This canvas satisfies the draw.Canvas interface that p.Draw expects.
-	c := vgimg.New(8*vg.Inch, 6*vg.Inch)
+	c := vgimg.New(10*vg.Inch, 6*vg.Inch)
 
 	// Draw the plot onto the canvas
 	p.Draw(draw.New(c)) // Use draw.New(c) to wrap the vgimg.Png canvas
@@ -257,12 +258,20 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Plot generated and served via AJAX.")
 }
 
-// StartPlottingServer now registers two handlers: one for the form, one for the plot.
+// StartPlottingServer registers all handlers, including for static files.
 func StartPlottingServer(port string) {
-	// Serve the HTML form at the root URL
+	// 1. Serve static files from the /static/ URL path
+	// http.Dir(staticFilesDir) creates a file system rooted at 'static'
+	// http.StripPrefix("/static/", ...) removes the /static/ prefix from the request path
+	// when looking for files within the 'static' directory.
+	fs := http.FileServer(http.Dir(staticFilesDir))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	log.Printf("Dataviz: Serving static files from /%s/", staticFilesDir) // DEBUG
+
+	// 2. Serve the HTML form at the root URL
 	http.HandleFunc("/", RootHandler)
 
-	// Handle form submissions and plot generation at the /plot URL
+	// 3. Handle form submissions and plot generation at the /plot URL
 	http.HandleFunc("/plot", PlotHandler)
 
 	log.Printf("Dataviz: Serving Fire Calculator at http://localhost%s/", port)

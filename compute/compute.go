@@ -64,6 +64,9 @@ func SimpleGrowth(
 		if month >= drawDownStart {
 			currentPrincipal -= monthlyDrawAmount
 		}
+		if currentPrincipal <= 0.0 {
+			currentPrincipal = 0.0
+		}
 		// accrue 1 month of interest
 		currentPrincipal *= (1 + monthlyGrowthRate)
 		// incrrement slices

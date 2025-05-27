@@ -5,13 +5,10 @@ package main
 //  Let's try to find out if its possible
 
 import (
-	"fmt"
-
-	"log"
-	//	"net/http" // Import the net/http package for web server
-	"os" // For checking current working directory if needed
-
 	"fire_calculator/dataviz"
+	"fmt"
+	"log"
+	"os" // For checking current working directory if needed
 )
 
 func main() {
