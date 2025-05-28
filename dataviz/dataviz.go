@@ -78,6 +78,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 // --- Prepare data for JSON ---
 type DataForJSON struct {
 	MonthIndex        []int     `json:"months"`
+	YearsIndex        []float64 `json:"years"`
 	PrincipalData     []float64 `json:"principal"`
 	ContributionsData []float64 `json:"contributions"`
 	Title             string    `json:"title"`
@@ -195,7 +196,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("PlotHandler: All parameters parsed successfully. Generating plot.") // DEBUG
 
 	// computational logic
-	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
+	principal, contributions, months, years, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
 		log.Printf("Error calculating growth: %v", err)
@@ -204,6 +205,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	dataForJSON := DataForJSON{
 		MonthIndex:        months,
+		YearsIndex:        years,
 		PrincipalData:     principal,
 		ContributionsData: contributions,
 		Title:             fmt.Sprintf("Retirement Projection (Initial: $%.2f, Growth: %.2f%%)", initialCapital, annualGrowthRate),

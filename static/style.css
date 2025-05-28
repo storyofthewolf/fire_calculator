@@ -60,10 +60,10 @@ button:hover {
 /* New/Modified styles for the plot container and canvas */
 .plot-container {
     /* Set a specific width/height for the container or max-width */
-    width: 100%; /* Occupy full width of its flex item (plot-section) */
-    height: 100%;
-    /* max-width: 900px; /* Or a fixed width, e.g., 800px */ 
-    /* min-height: 1000px; /* Set a fixed height or min-height */
+    /*width: 100%; /* Occupy full width of its flex item (plot-section) */
+    /*height: 100%;*/
+    min-width: 500px; /* Or a fixed width, e.g., 800px */ 
+    height: 600px; /* Set a fixed height or min-height */
     margin: 0 auto; /* Center if max-width is used */
     position: relative; /* Needed if you ever add tooltips outside canvas, or other positioning */
 }
@@ -93,6 +93,10 @@ img {
         padding-right: 20px;
     }
     .plot-section {
+        flex: 2; /* Adjust as needed, ensures it takes 2/3 of available horizontal space */
+        min-width: 400px;
         padding-left: 20px;
+        /* You might add min-height here too if the plot-section needs to be taller overall */
+        /* min-height: 620px; /* A bit more than plot-container height to allow for padding/margin */
     }
 }
