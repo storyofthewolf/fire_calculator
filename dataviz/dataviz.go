@@ -7,22 +7,25 @@ package dataviz
 import (
 	"fmt"
 	"html/template"
-	"image/color"
-	"image/png"
+
+	//	"image/color"
+	//	"image/png"
 
 	"log"
 	"net/http" // Import the net/http package for web server
 
 	// For checking current working directory if needed
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
-	"gonum.org/v1/plot/vg/draw"
-	"gonum.org/v1/plot/vg/vgimg"
+	//	"gonum.org/v1/plot"
+	//	"gonum.org/v1/plot/plotter"
+	//	"gonum.org/v1/plot/vg"
+	//	"gonum.org/v1/plot/vg/draw"
+	//	"gonum.org/v1/plot/vg/vgimg"
 
 	"strconv"
 
 	"fire_calculator/compute"
+
+	"encoding/json"
 )
 
 // Define the path to your HTML template
@@ -55,7 +58,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 
 // generatePlotData is a helper function to create the plotter.XYs from your slices
 // assumes the x axis array is an int, y axis array is a float
-func generatePlotData(xData []int, yData []float64, currentAge int) (plotter.XYs, error) {
+/* func generatePlotData(xData []int, yData []float64, currentAge int) (plotter.XYs, error) {
 	if len(xData) != len(yData) {
 		return nil, fmt.Errorf("xData and yData slices must have the same length")
 	}
@@ -70,6 +73,16 @@ func generatePlotData(xData []int, yData []float64, currentAge int) (plotter.XYs
 		//fmt.Println("%d, %f,%f", i, pts[i].X, pts[i].Y)
 	}
 	return pts, nil
+}  */
+
+// --- Prepare data for JSON ---
+type DataForJSON struct {
+	MonthIndex        []int     `json:"months"`
+	PrincipalData     []float64 `json:"principal"`
+	ContributionsData []float64 `json:"contributions"`
+	Title             string    `json:"title"`
+	XLabel            string    `json:"xLabel"`
+	YLabel            string    `json:"yLabel"`
 }
 
 // plotHandler generates the plot and serves it as a PNG image via HTTP
@@ -181,7 +194,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("PlotHandler: All parameters parsed successfully. Generating plot.") // DEBUG
 
-	// cmputational logic
+	// computational logic
 	principal, contributions, months, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
@@ -189,8 +202,27 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dataForJSON := DataForJSON{
+		MonthIndex:        months,
+		PrincipalData:     principal,
+		ContributionsData: contributions,
+		Title:             fmt.Sprintf("Retirement Projection (Initial: $%.2f, Growth: %.2f%%)", initialCapital, annualGrowthRate),
+		XLabel:            "Age",
+		YLabel:            "Portfolio Value ($)",
+	}
+
+	// --- Serve JSON data instead of the plot image ---
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(dataForJSON); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+		http.Error(w, "Internal Server Error: Could not send data", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Monthly data sent as JSON.")
+
 	// generate plot data
-	principalPoints, err := generatePlotData(months, principal, currentAge)
+	/* principalPoints, err := generatePlotData(months, principal, currentAge)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error preparing cumulative data: %v", err), http.StatusInternalServerError)
 		log.Printf("Error preparing cumulative data: %v", err)
@@ -255,7 +287,7 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode plot to PNG", http.StatusInternalServerError)
 		log.Printf("Failed to encode plot to PNG: %v", err)
 	}
-	log.Println("Plot generated and served via AJAX.")
+	log.Println("Plot generated and served via AJAX.") */
 }
 
 // StartPlottingServer registers all handlers, including for static files.
