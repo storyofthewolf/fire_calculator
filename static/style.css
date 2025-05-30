@@ -5,7 +5,7 @@ body {
 }
 
 .container {
-    background-color: #e5baba;
+    background-color: #cebaba;
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -63,21 +63,29 @@ button:hover {
     /*width: 100%; /* Occupy full width of its flex item (plot-section) */
     /*height: 100%;*/
     min-width: 500px; /* Or a fixed width, e.g., 800px */ 
-    height: 600px; /* Set a fixed height or min-height */
-    margin: 0 auto; /* Center if max-width is used */
+    height: 400px; /* Set a fixed height or min-height */
+    margin: 20px auto 0 auto; /* Center if max-width is used */
     position: relative; /* Needed if you ever add tooltips outside canvas, or other positioning */
 }
 
-#financialChart {
+.plot-container-2 {
+    /*width: 100%;*/
+    min-width: 500px; /* Match first chart or adjust */
+    height: 400px;   /* Adjust height as needed for the second chart */
+    margin: 40px auto 0 auto; /* Add margin-top for spacing */
+    position: relative;
+}
+
+#principalChart {
     /* The canvas itself should fill its container when responsive: true */
     width: 100% !important; /* !important might be needed to override default canvas sizing */
     height: 100% !important; /* !important might be needed */
 }
 
-img {
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #ddd;
+#takeHomeChart {
+    /* The canvas itself should fill its container when responsive: true */
+    width: 100% !important; /* !important might be needed to override default canvas sizing */
+    height: 100% !important; /* !important might be needed */
 }
 
 .error-message {
@@ -99,4 +107,24 @@ img {
         /* You might add min-height here too if the plot-section needs to be taller overall */
         /* min-height: 620px; /* A bit more than plot-container height to allow for padding/margin */
     }
+}
+
+/* Remove increment buttons for number inputs */
+
+/* For Webkit browsers (Chrome, Safari, Edge, Opera) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none; /* Removes the default appearance */
+    margin: 0; /* Important: prevents space from being reserved for the buttons */
+}
+
+/* For Firefox */
+input[type="number"] {
+    -moz-appearance: textfield; /* Removes the default appearance for Firefox */
+    /* Note: Firefox still shows a very subtle outline or focus style, but the arrows are gone. */
+}
+
+/* Optional: If you want to ensure no generic appearance overrides them */
+input[type="number"] {
+    appearance: none; /* Standard property */
 }

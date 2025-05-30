@@ -1,6 +1,7 @@
 // Store a reference to the chart instance globally or in a scope accessible by the event listener
 // This allows us to destroy and re-create the chart when new data arrives
-let myChart;
+let principalChart;
+let takeHomeChart;
 
 document.getElementById('calculatorForm').addEventListener('submit', async function(event) {
     event.preventDefault(); // Prevent default form submission
@@ -9,11 +10,13 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
     const formData = new FormData(form);
     const queryParams = new URLSearchParams(formData).toString();
 
-    const chartCanvas = document.getElementById('financialChart');
+    const principalCanvas = document.getElementById('principalChart');
+    const takeHomeCanvas = document.getElementById('takeHomeChart');
     const errorMessageDiv = document.getElementById('errorMessage');
 
     errorMessageDiv.textContent = ''; // Clear previous error messages
-    chartCanvas.style.display = 'block'; // Ensure canvas is visible if previously hidden by an error
+    principalCanvas.style.display = 'block'; // Ensure canvas is visible if previously hidden by an error
+    takeHomeCanvas.style.display = 'block';
 
     try {
         const response = await fetch(`/plot?${queryParams}`);
@@ -29,7 +32,8 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
         if (!data.months || !Array.isArray(data.months) ||
             !data.years  || !Array.isArray(data.years) ||
             !data.principal || !Array.isArray(data.principal) ||
-            !data.contributions || !Array.isArray(data.contributions)) {
+            !data.contributions || !Array.isArray(data.contributions) ||
+            !data.takeHome || !Array.isArray(data.takeHome)) {
             throw new Error("Invalid data format received from server: missing or malformed arrays.");
         }
         if (data.months.length === 0 || data.principal.length === 0 || data.contributions.length === 0) {
@@ -44,14 +48,15 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
 //        const labels = data.years.map(year => `Year ${year}`); // Format labels for X-axis
         const principalData = data.principal;
         const contributionsData = data.contributions;
+        const takeHomeData = data.takeHome;
 
         // If a chart already exists, destroy it before creating a new one
-        if (myChart) {
-            myChart.destroy();
+        if (principalChart) {
+            principalChart.destroy();
         }
 
         // Create the chart using Chart.js
-        myChart = new Chart(chartCanvas, { // Assign the new chart to myChart
+        principalChart = new Chart(principalCanvas, { // Assign the new chart to myChart
             type: 'line',
             data: {
                 labels: labels,
@@ -127,12 +132,67 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
             }
         });
 
+        // --- SECOND CHART: Withdrawals/Expenses ---
+        if (takeHomeChart) { 
+            takeHomeChart.destroy(); 
+        } // Destroy existing second chart
+
+        takeHomeChart = new Chart(takeHomeCanvas, {
+            type: 'line', // Can be 'bar', 'scatter', etc.
+            data: {
+                labels: labels, // Re-use the same month labels
+                datasets: [
+                    {
+                        label: 'Monthly Withdrawals + Pensions',
+                        data: takeHomeData,
+                        borderColor: 'red', // Distinct color
+                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                        fill: false,
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        pointHoverRadius: 6,
+                        pointHitRadius: 10,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: data.xLabel }
+                    },
+                    y: {
+                        title: { display: true, text: data.yLabel }, // Re-use YLabel from Go, or make a new one in Go
+                        ticks: { callback: function(value) { return '$' + value.toLocaleString(); } }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        title: function(context) { return context[0].label; },
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) { label += '$' + context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+                            return label;
+                        }
+                    },
+                    legend: { display: true, position: 'top' }
+                }
+            }
+        });
+
+
     } catch (error) {
         console.error("Error fetching or rendering data:", error);
         errorMessageDiv.textContent = `Error: ${error.message}`;
-        chartCanvas.style.display = 'none'; // Hide chart on error
-         if (myChart) { // Destroy existing chart if error occurs
-            myChart.destroy();
+        principalCanvas.style.display = 'none'; // Hide chart on error
+        takeHomeCanvas.style.display = 'none';
+         if (principalChart) { // Destroy existing chart if error occurs
+            principalChart.destroy();
+        }
+         if (takeHomeChart) { // Destroy existing chart if error occurs
+            takeHomeChart.destroy();
         }
     }
 });
