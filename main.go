@@ -5,7 +5,6 @@ package main
 //  Let's try to find out if its possible
 
 import (
-	"fire_calculator/dataviz"
 	"fmt"
 	"log"
 	"os" // For checking current working directory if needed
@@ -25,7 +24,8 @@ func main() {
 	fmt.Printf("Server starting on http://localhost%s/plot\n", port)
 	fmt.Println("Open your browser to this URL and refresh after code changes.")
 	log.Println("Starting Fire Calculator web server...")
-	dataviz.StartPlottingServer(port)
+	//	dataviz.StartPlottingServer(port)
+	StartPlottingServer(port)
 
 	// Start the HTTP server
 	// log.Fatal will print the error and exit if ListenAndServe fails
