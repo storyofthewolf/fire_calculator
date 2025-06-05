@@ -4,6 +4,12 @@ package main
 //  Financial Independenc Retire Early is a dream of many
 //  Let's try to find out if its possible
 
+//I would like to add
+//2. add social-security and pension benefit consideration
+//3. add tax consideration, combined with draw-down and SS/P benefits to give take home
+//4. add non-constant contributions, draw down
+//5. perhaps add a stochastic component to the annual growth rate, since the market doesnt always go up
+
 import (
 	"fmt"
 	"log"
