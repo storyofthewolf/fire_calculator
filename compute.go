@@ -28,20 +28,23 @@ func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
 	}
 
 	// define local variables
-	monthlyGrowthRate := input.AnnualGrowthRate / 12.0
-	totalMonths := (input.ExpectedDeathAge - input.CurrentAge) * 12
-	contributionMonths := input.ContributionYears * 12
-	drawDownStart := (input.DrawDownAge - input.CurrentAge) * 12
+	monthlyGrowthRate   := input.AnnualGrowthRate / 12.0
+	totalMonths         := (input.ExpectedDeathAge - input.CurrentAge) * 12
+	contributionMonths  := input.ContributionYears * 12
+	drawDownStart       := (input.DrawDownAge - input.CurrentAge) * 12
+	pensionStart	    := (input.ExpectedPensionAge - input.CurrentAge) * 12
 
 	// slices for running counts of principal accumulation and contributions
-	totalPrincipal := make([]float64, 0, totalMonths)
-	totalContributions := make([]float64, 0, totalMonths)
-	monthsElapsed := make([]int, 0, totalMonths)
-	yearsElapsed := make([]float64, 0, totalMonths)
+	totalPrincipal      := make([]float64, 0, totalMonths)
+	totalContributions  := make([]float64, 0, totalMonths)
+	takeHome            := make([]float64, 0, totalMonths)
+	monthsElapsed       := make([]int, 0, totalMonths)
+	yearsElapsed        := make([]float64, 0, totalMonths)
 
 	// at t=0 the current principal is the intial capital on had
-	currentPrincipal := input.InitialCapital
-	currentContributions := input.InitialCapital
+	currentPrincipal      := input.InitialCapital
+	currentContributions  := input.InitialCapital
+	currentTakeHome       := 0.0
 
 	for month := 1; month <= totalMonths; month++ {
 		// if still during contributing period add monthly contribution to current principal tally
@@ -52,6 +55,14 @@ func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
 		}
 		if month >= drawDownStart {
 			currentPrincipal -= input.MonthlyDrawAmount
+			currentTakeHome = input.MonthlyDrawAmount
+		}
+		if month >= drawDownStart {
+			currentPrincipal -= input.MonthlyDrawAmount
+			currentTakeHome = input.MonthlyDrawAmount
+		}
+		if month >= pensionStart {
+			currentTakeHome += input.MonthlyPension
 		}
 		if currentPrincipal <= 0.0 {
 			currentPrincipal = 0.0
@@ -63,6 +74,7 @@ func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
 		totalContributions = append(totalContributions, currentContributions)
 		monthsElapsed = append(monthsElapsed, month)
 		yearsElapsed = append(yearsElapsed, float64(month)/12.)
+		takeHome = append(takeHome, currentTakeHome)
 	}
 
 	//
@@ -71,6 +83,7 @@ func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
 		Contributions: totalContributions,
 		Months:        monthsElapsed,
 		Years:         yearsElapsed,
+		TakeHome:      takeHome,
 	}
 
 	return output, nil
