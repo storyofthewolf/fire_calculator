@@ -6,11 +6,43 @@ package main
 
 import (
 	"fmt"
+	// "time"
+	// "math/rand"
 )
 
 // Computational Routines
 // func SimpleGrowth
 // func applyTaxes
+
+// generateRandomGrowthRates generates a slice of random monthly growth rates
+// based on a normal distribution.
+// mean: the average annual growth rate (e.g., 0.08 for 8%)
+// stdDev: the standard deviation of annual growth rate
+// numMonths: the number of months to generate growth rates for
+/* func generateRandomGrowthRates(mean, stdDev float64, numMonths int) []float64 {
+	// Create a new random number generator.
+	// Using time.Now().UnixNano() ensures a different sequence each time.
+	// For reproducible results, you'd use a fixed seed, e.g., rand.NewSource(42)
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+
+	// Adjust mean and stdDev for monthly rates (assuming annual inputs)
+	// Simple approximation: divide by 12 for mean, sqrt(12) for stdDev
+	// For more rigorous financial modeling, consider continuous compounding or other methods.
+	monthlyMean := mean / 12.0
+	monthlyStdDev := stdDev / (12.0 * 0.5) // A common rule of thumb for converting annual to monthly std dev (dividing by sqrt(12))
+
+	growthRates := make([]float64, numMonths)
+
+	for i := 0; i < numMonths; i++ {
+		// NormFloat64 returns a normally distributed float64 with mean 0 and stddev 1.
+		// We then scale and shift it to our desired mean and stdDev.
+		rate := r.NormFloat64()*monthlyStdDev + monthlyMean
+		growthRates[i] = rate
+	}
+
+	return growthRates
+} */
 
 func PrepareFinanceTimeSeriesICs(input *FinancialICs) (*TimeSeriesICs, error) {
 
@@ -32,8 +64,6 @@ func PrepareFinanceTimeSeriesICs(input *FinancialICs) (*TimeSeriesICs, error) {
 	monthlyGrowthRate := make([]float64, 0, totalMonths)
 	monthlyDrawAmount := make([]float64, 0, totalMonths)
 	monthlyPension := make([]float64, 0, totalMonths)
-
-	fmt.Println(totalMonths, contributionMonths, drawDownStart)
 
 	for month := 0; month <= totalMonths; month++ {
 		// if still during contributing period add monthly contribution to current principal tally
