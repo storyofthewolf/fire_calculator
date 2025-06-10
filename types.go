@@ -17,7 +17,7 @@ type DataForJSON struct {
 // GrowthInput groups all parameters needed to run the growth simulation.
 type FinancialICs struct {
 	InitialCapital      float64 // Initial amount of money
-	MonthlyContribution float64 // Fixed monthly contribution to retirement/investment accounts
+	MonthlyContribution float64 // Monthly contribution to retirement/investment accounts
 	AnnualGrowthRate    float64 // Fixed annual growth rate assumption (e.g., 0.07 for 7%)
 	ContributionYears   int     // Number of years expected to contribute to accounts (before retirement)
 	CurrentAge          int     // Your current age
@@ -26,6 +26,16 @@ type FinancialICs struct {
 	ExpectedDeathAge    int     // When you expect to die
 	MonthlyPension      float64 // Fixed monthly draw amount during retirement
 	ExpectedPensionAge  int     // age when starting to take Pension or Social Security
+}
+
+type TimeSeriesICs struct {
+	InitialCapital      float64   // Initial amount of money
+	MonthlyContribution []float64 // Monthly contribution to retirement/investment accounts
+	MonthlyGrowthRate   []float64 // Fixed annual growth rate assumption (e.g., 0.07 for 7%)
+	MonthlyDrawAmount   []float64 // Fixed monthly draw amount during retirement
+	MonthlyPension      []float64 // Fixed monthly draw amount during retirement
+	TotalMonths         int       // total number of months for integration
+
 }
 
 // GrowthOutput holds all the results from the growth simulation.

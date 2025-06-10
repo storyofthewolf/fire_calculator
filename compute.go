@@ -12,45 +12,80 @@ import (
 // func SimpleGrowth
 // func applyTaxes
 
-// CompoundingGrowth function (copy it here if it's not in a separate package)
-// Currently this assumes an initial capital amount
-// monthly compounding interest at a fixed growth rate
-// monthly contributions to investment/retirement accounts
-// number of years contributing to retiremett accouns
-// current age
+func PrepareFinanceTimeSeriesICs(input *FinancialICs) (*TimeSeriesICs, error) {
 
-func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
-
-	if input.InitialCapital < 0 || input.MonthlyContribution < 0 || input.AnnualGrowthRate < 0 {
-		return nil, fmt.Errorf("initial principal, monthly contribution, and annual growth rate cannot be negative")
+	if input.InitialCapital < 0 || input.MonthlyContribution < 0 {
+		return nil, fmt.Errorf("initial principal, and monthly contribution cannot be negative")
 	}
 	if input.CurrentAge < 0 {
 		return nil, fmt.Errorf("age must be greater than zero")
 	}
 
-	// define local variables
-	monthlyGrowthRate := input.AnnualGrowthRate / 12.0
+	// define local
 	totalMonths := (input.ExpectedDeathAge-input.CurrentAge)*12 + 1
 	contributionMonths := input.ContributionYears * 12
 	drawDownStart := (input.DrawDownAge - input.CurrentAge) * 12
 	pensionStart := (input.ExpectedPensionAge - input.CurrentAge) * 12
 
 	// slices for running counts of principal accumulation and contributions
-	totalPrincipal := make([]float64, 0, totalMonths)
-	totalContributions := make([]float64, 0, totalMonths)
-	takeHome := make([]float64, 0, totalMonths)
-	monthsElapsed := make([]int, 0, totalMonths)
-	yearsElapsed := make([]float64, 0, totalMonths)
+	monthlyContribution := make([]float64, 0, totalMonths)
+	monthlyGrowthRate := make([]float64, 0, totalMonths)
+	monthlyDrawAmount := make([]float64, 0, totalMonths)
+	monthlyPension := make([]float64, 0, totalMonths)
+
+	fmt.Println(totalMonths, contributionMonths, drawDownStart)
+
+	for month := 0; month <= totalMonths; month++ {
+		// if still during contributing period add monthly contribution to current principal tally
+		// and add month contribution to current contributions tally
+		if month <= contributionMonths {
+			monthlyContribution = append(monthlyContribution, input.MonthlyContribution)
+		} else {
+			monthlyContribution = append(monthlyContribution, 0.0)
+		}
+		if month >= drawDownStart {
+			monthlyDrawAmount = append(monthlyDrawAmount, input.MonthlyDrawAmount)
+		} else {
+			monthlyDrawAmount = append(monthlyDrawAmount, 0.0)
+		}
+		if month >= pensionStart {
+			monthlyPension = append(monthlyPension, input.MonthlyPension)
+		} else {
+			monthlyPension = append(monthlyPension, 0.0)
+		}
+		monthlyGrowthRate = append(monthlyGrowthRate, input.AnnualGrowthRate/12.)
+	}
+
+	output := &TimeSeriesICs{
+		InitialCapital:      input.InitialCapital,
+		MonthlyContribution: monthlyContribution,
+		MonthlyGrowthRate:   monthlyGrowthRate,
+		MonthlyDrawAmount:   monthlyDrawAmount,
+		MonthlyPension:      monthlyPension,
+		TotalMonths:         totalMonths,
+	}
+
+	return output, nil
+}
+
+func FinancialProjection(input *TimeSeriesICs) (*FinancialResults, error) {
+
+	// slices for running counts of principal accumulation and contributions
+	totalPrincipal := make([]float64, 0, input.TotalMonths)
+	totalContributions := make([]float64, 0, input.TotalMonths)
+	takeHome := make([]float64, 0, input.TotalMonths)
+	monthsElapsed := make([]int, 0, input.TotalMonths)
+	yearsElapsed := make([]float64, 0, input.TotalMonths)
 
 	// at t=0 the current principal is the intial capital on had
 	currentPrincipal := input.InitialCapital
 	currentContributions := input.InitialCapital
 	currentTakeHome := 0.0
 
-	for month := 0; month <= totalMonths; month++ {
+	for month := 0; month <= input.TotalMonths; month++ {
 		// if still during contributing period add monthly contribution to current principal tally
 		// and add month contribution to current contributions tally
-
+		//fmt.Println(totalPrincipal[month], totalContributions[month], totalPrincipal[month])
 		// incrrement slices
 		totalPrincipal = append(totalPrincipal, currentPrincipal)
 		totalContributions = append(totalContributions, currentContributions)
@@ -58,26 +93,15 @@ func SimpleGrowth(input *FinancialICs) (*FinancialResults, error) {
 		yearsElapsed = append(yearsElapsed, float64(month)/12.)
 		takeHome = append(takeHome, currentTakeHome)
 
-		if month <= contributionMonths {
-			currentPrincipal += input.MonthlyContribution
-			currentContributions += input.MonthlyContribution
-		}
-		if month >= drawDownStart {
-			currentPrincipal -= input.MonthlyDrawAmount
-			currentTakeHome = input.MonthlyDrawAmount
-		}
-		if month >= drawDownStart {
-			currentPrincipal -= input.MonthlyDrawAmount
-			currentTakeHome = input.MonthlyDrawAmount
-		}
-		if month >= pensionStart {
-			currentTakeHome += input.MonthlyPension
-		}
+		currentPrincipal += input.MonthlyContribution[month]
+		currentContributions += input.MonthlyContribution[month]
+		currentPrincipal -= input.MonthlyDrawAmount[month]
+		currentTakeHome = input.MonthlyDrawAmount[month] + input.MonthlyPension[month]
 		if currentPrincipal <= 0.0 {
 			currentPrincipal = 0.0
 		}
 		// accrue 1 month of interest
-		currentPrincipal *= (1 + monthlyGrowthRate)
+		currentPrincipal *= (1 + input.MonthlyGrowthRate[month])
 
 	}
 

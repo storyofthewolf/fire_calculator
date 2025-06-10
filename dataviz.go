@@ -22,6 +22,7 @@ const staticFilesDir = "static"                 // Define the directory where yo
 var err error
 var fireIn *FinancialICs // declares input struct
 var fireOut *FinancialResults
+var fireTimeSeries *TimeSeriesICs
 
 // RootHandler serves the HTML form.
 func RootHandler(w http.ResponseWriter, r *http.Request) {
@@ -129,9 +130,11 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 
 	// initialize fire pointers
 	fireIn = &FinancialICs{}
+	fireTimeSeries = &TimeSeriesICs{}
 	fireOut = &FinancialResults{}
 
 	// Get parameters for GUI
+	// For the moment these are single values
 	fireIn.InitialCapital, err = getFloatParam("initialCapital")
 	if err != nil {
 		log.Printf("PlotHandler Error: %v", err) // DEBUG
@@ -197,8 +200,8 @@ func PlotHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("PlotHandler: All parameters parsed successfully. Generating plot.") // DEBUG
 
 	// computational logic
-	//principal, contributions, months, years, err := compute.SimpleGrowth(initialCapital, monthlyContribution, annualGrowthRate, contributionYears, currentAge, drawDownAge, monthlyDrawAmount, expectedDeathAge)
-	fireOut, err = SimpleGrowth(fireIn)
+	fireTimeSeries, err = PrepareFinanceTimeSeriesICs(fireIn)
+	fireOut, err = FinancialProjection(fireTimeSeries)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error calculating growth: %v", err), http.StatusInternalServerError)
