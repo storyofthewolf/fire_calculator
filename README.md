@@ -1,5 +1,8 @@
-// FIRE
-// Financial Independence Retire Early calculator
-// Eric T. Wolf
-//
-// a hobby project to teach myself Go, more to come...
+# fire-calculator
+
+a longterm investment calculator 
+
+
+## About The Project
+
+The goal of course, is to retire as soon as possible, hence, FIRE.
